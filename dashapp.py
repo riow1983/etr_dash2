@@ -1,3 +1,4 @@
+from flask import Flask
 import sqlite3 as sql
 import pandas as pd
 from functools import reduce
@@ -51,7 +52,9 @@ def generate_table(dataframe):
     )
 
 
-app = dash.Dash()
+#app = dash.Dash()
+server = Flask(__name__)
+app = dash.Dash(__name__, server=server)
 
 def serve_layout():
     getdata()
@@ -163,4 +166,5 @@ def update_all():
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, host='0.0.0.0')
+    #app.run(debug=True, host='0.0.0.0')

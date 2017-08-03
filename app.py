@@ -8,8 +8,12 @@ from functools import reduce
 #import StringIO
 #import io as cStringIO
 from io import BytesIO
+import os
+
+
+
 app = Flask(__name__)
-app.secret_key = '\xa7\x1fdf\x8bB\xcf\x11\x8eG\xfc\xac^\x8b\xcc\xeb\x07+|\x96\xc6\xa1|\x8a'
+app.secret_key = os.environ["APP_SECRET_KEY"]
 
 @app.route('/')
 def home():
