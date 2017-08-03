@@ -1,5 +1,8 @@
 from flask import Flask
-import sqlite3 as sql
+from flask_sqlalchemy import SQLAlchemy
+
+from flask.ext.heroku import Heroku
+
 import pandas as pd
 from functools import reduce
 
@@ -8,16 +11,37 @@ from dash.dependencies import Input, Output#, Event
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
-#import plotly.figure_factory as fifa
+import plotly.figure_factory as fifa
+
+import os
+
+
+#app = dash.Dash()
+server = Flask(__name__)
+#server.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/english'
+heroku = Heroku(server)
+server.secret_key = os.environ.get('APP_SECRET_KEY', 'my-secret-key')
+db = SQLAlchemy(server)
+app = dash.Dash(__name__, server=server)
+
+
+
+mycol = ["id","personnel", "starttime", "endtime", "client", "section", "patient", "country", "summary"] 
+
 
 def getdata():
-    conn = sql.connect("database.db")
-    sqlstring = "SELECT * FROM report"
+    #conn = sql.connect("database.db")
+    #sqlstring = "SELECT * FROM report"
+    #df = pd.read_sql(sqlstring,conn)
+    rows = db.session.execute("SELECT * FROM report;").fetchall()
+    db.session.close()
+    df = pd.DataFrame(rows,columns=mycol)
+    #print(type(df["endtime"][0]))
 
-    df = pd.read_sql(sqlstring,conn)
-    df["time_required"] = pd.to_datetime(df["endtime"]) - pd.to_datetime(df["starttime"])
+    #df["time_required"] = pd.to_datetime(df["endtime"]) - pd.to_datetime(df["starttime"])
+    df["time_required"] = df["endtime"] - df["starttime"]
     df["time_required(m)"] = df["time_required"].astype('timedelta64[m]')
-    df["month"] = df["starttime"].apply(lambda x:x[:7])
+    df["month"] = df["starttime"].apply(lambda x:str(x)[:7])
     df = df[["personnel","month","time_required(m)"]]
     df['month'] = df['month'].apply(lambda x:int(x.replace('-','')))
     #df["month"] = pd.to_datetime(df["month"])
@@ -39,7 +63,7 @@ def getdata():
 
 #getdata()
 
-
+'''
 def generate_table(dataframe):
     return html.Table(
         # Header
@@ -50,11 +74,8 @@ def generate_table(dataframe):
             html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
         ]) for i in range(len(dataframe))]
     )
+'''
 
-
-#app = dash.Dash()
-server = Flask(__name__)
-app = dash.Dash(__name__, server=server)
 
 def serve_layout():
     getdata()
@@ -65,16 +86,16 @@ def serve_layout():
             multi=True,
             value=ffc.columns
         ),
-        html.Div(
-            id='table-container'
-        ),
+        #html.Div(
+        #    id='table-container'
+        #),
         dcc.Graph(
             id='graph-with-range',
             animate=False
         ),
-        #dcc.Graph(
-        #    id='my-table'
-        #),
+        dcc.Graph(
+            id='my-table'
+        ),
         dcc.RangeSlider(
             id='month-range',
             marks={str(i): i for i in ffc.index},
@@ -123,15 +144,18 @@ def update_figure(range_value, person_value):
     }
 
 
-'''
-@app.callback(
-    dash.dependencies.Output('my-table', 'figure'),
-    [dash.dependencies.Input('month-range', 'value')])
-def update_table(value):
-     ffcf = ffc[(ffc.index >= value[0])&(ffc.index <= value[1])]
-     return fifa.create_table(ffcf, index=True, index_title='Y/M')
-     '''
 
+@app.callback(
+    Output('my-table', 'figure'),
+    [Input('month-range', 'value'),
+     Input('select-person', 'value')])
+def update_table(range_value, person_value):
+     ffcf = ffc[(ffc.index >= range_value[0])&(ffc.index <= range_value[1])]
+     ffcf = ffcf[person_value]
+     return fifa.create_table(ffcf, index=True, index_title='Y/M')
+
+
+'''
 @app.callback(
     Output('table-container', 'children'),
     [Input('month-range', 'value'),
@@ -144,6 +168,7 @@ def update_table(range_value, person_value):
     ffcf = ffcf[person_value]
     ffcf = ffcf.reset_index()
     return generate_table(ffcf)
+'''
 
 
 '''
