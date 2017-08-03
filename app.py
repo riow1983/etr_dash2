@@ -9,11 +9,12 @@ from functools import reduce
 #import io as cStringIO
 from io import BytesIO
 app = Flask(__name__)
-app.secret_key = 'some_secret'
+app.secret_key = '\xa7\x1fdf\x8bB\xcf\x11\x8eG\xfc\xac^\x8b\xcc\xeb\x07+|\x96\xc6\xa1|\x8a'
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    iframe = 'http://localhost:8050'
+    return render_template('home.html', iframe=iframe)
 
 @app.route('/enternew')
 def new_student():
@@ -41,7 +42,7 @@ def addrec():
 
         except:
             conn.rollback()
-            msg = "error in insert operation"
+            msg = "Error in insert operation"
 
         finally:
             return render_template("result.html", msg = msg)
